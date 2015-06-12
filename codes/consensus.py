@@ -20,7 +20,8 @@ from collections import defaultdict
 import logging
 
 from .basic import implements, uses, trigger
-from .broadcast import BasicBroadcast
+from .links import EliminateDuplicates
+from .broadcast import BasicBroadcast, LazyReliableBroadcast
 from .failure_detector import ExcludeOnTimeout
 
 log = logging.getLogger(__name__)
