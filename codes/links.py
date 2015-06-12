@@ -28,7 +28,7 @@ class BasicLink:
 
 
 @implements('StubbornPointToPointLinks')
-@uses('FairLossPointToPointLinks')
+@uses('FairLossPointToPointLinks', BasicLink, 'fll')
 class RetransmitForever:
     """
     Algorithm: 2.1
@@ -59,7 +59,7 @@ class RetransmitForever:
 
 
 @implements('PerfectPointToPointLinks')
-@uses('StubbornPointToPointLinks')
+@uses('StubbornPointToPointLinks', RetransmitForever, 'sl')
 class EliminateDuplicates:
     """
     Algorithm 2.2
@@ -84,7 +84,7 @@ class EliminateDuplicates:
 
 
 @implements('LoggedPerfectPointToPointLinks')
-@uses('StubbornPointToPointLinks')
+@uses('StubbornPointToPointLinks', RetransmitForever, 'sl')
 class LogDelivered:
     """
     Algorithm 2.3
@@ -116,7 +116,8 @@ class LogDelivered:
             trigger(self.upper, 'Deliver', q, m)
 
 
-@implements('')
+@implements('FIFOPerfectPointToPointLinks')
+@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
 class SequenceNumber:
     """
     Ex2.3: implements FIFO-order perfect point-to-point links

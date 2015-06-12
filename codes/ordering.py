@@ -9,7 +9,7 @@ from .broadcast import LazyReliableBroadcast
 
 
 @implements('FIFOReliableBroadcast')
-@uses('ReliableBroadcast')
+@uses('ReliableBroadcast', LazyReliableBroadcast, 'rb')
 class BroadcastWithSequenceNumber:
     """
     Algorithm 3.12
@@ -47,7 +47,7 @@ class BroadcastWithSequenceNumber:
 
 
 @implements('CausalOrderReliableBroadcast')
-@uses('ReliableBroadcast')
+@uses('ReliableBroadcast', LazyReliableBroadcast, 'rb')
 class NoWaitingCausalBroadcast:
     """
     Algorithm 3.13
@@ -95,7 +95,7 @@ class NoWaitingCausalBroadcast:
 
 
 @implements('CausalOrderReliableBroadcast')
-@uses('ReliableBroadcast')
+@uses('ReliableBroadcast', LazyReliableBroadcast, 'rb')
 class WaitingCausalBroadcast:
     """
     algo 3.15

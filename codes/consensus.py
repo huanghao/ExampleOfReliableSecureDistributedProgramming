@@ -28,7 +28,8 @@ log = logging.getLogger(__name__)
 
 
 @implements('Consensus')
-@uses('BestEffortBroadcast', 'PerfectFailureDetector')
+@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
 class FloodingConsensus:
     """
     algo 5.1
@@ -116,7 +117,8 @@ class FloodingConsensus:
 
 
 @implements("Consensus")
-@uses("BestEffortBroadcast", "PerfectFailureDetector")
+@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
 class HierarchicalConsensus:
     """
     Algorithm 5.2
@@ -174,8 +176,8 @@ class HierarchicalConsensus:
 
 
 @implements('UniformConsensus')
-@uses('BestEffortBroadcast')
-@uses('PerfectFailureDetector')
+@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
 class FloodingUniformConsensus:
     """
     Algorithm 5.3
@@ -244,10 +246,9 @@ class FloodingUniformConsensus:
 
 
 @implements('UniformConsensus')
-@uses('PerfectPointToPointLinks')
-@uses('BestEffortBroadcast')
-@uses('ReliableBroadcast')
-@uses('PerfectFailureDetector')
+@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
+@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
 class HierarchicalUniformConsensus:
     """
     Algorithm 5.4

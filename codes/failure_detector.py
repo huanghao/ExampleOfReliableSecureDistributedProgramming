@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 
 
 @implements('PerfectFailureDetector')
-@uses('PerfectPointToPointLinks')
+@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
 class ExcludeOnTimeout:
     """
     Algorithm 2.5: Exclude on Timeout
@@ -53,7 +53,7 @@ class ExcludeOnTimeout:
 
 
 @implements('EventuallyPerfectFailureDetector')
-@uses('PerfectPointToPointLinks')
+@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
 class IncreasingTimeout:
     """
     Algorithm 2.7: Increasing Timeout

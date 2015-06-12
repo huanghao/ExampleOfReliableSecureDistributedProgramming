@@ -26,9 +26,9 @@ from .failure_detector import ExcludeOnTimeout
 
 
 @implements('OneNRegularRegister')
-@uses('BestEffortBroadcast',
-      'PerfectPointToPointLinks',
-      'PerfectFailureDetector')
+@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
+@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
 class ReadOneWriteAll:
     """
     Algorithm 4.1: the reader reads one value and the writer writes all values
@@ -83,7 +83,8 @@ class ReadOneWriteAll:
 
 
 @implements('OneNRegularRegister')
-@uses('BestEffortBroadcast', 'PerfectPointToPointLinks')
+@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
 class MajorityVotingRegularRegister:
     """
     Algorithm 4.2
@@ -160,7 +161,7 @@ class MajorityVotingRegularRegister:
 
 
 @implements('OneOneAtomicRegister')
-@uses('OneNRegularRegister')
+@uses('OneNRegularRegister', MajorityVotingRegularRegister, 'onrr')
 class ONRRtoOOAR:
     """
     Algorithm 4.3: From (1, N) Regular to (1, 1) Atomic Registers
@@ -194,7 +195,7 @@ class ONRRtoOOAR:
 
 
 @implements('OneNAtomicRegister')
-@uses('OneOneAtomicRegister')
+@uses('OneOneAtomicRegister', ONRRtoOOAR, 'ooar')
 class OOARtoONAR:
     """
     Algorithm 4.4: From (1, 1) Atomic to (1, N) Atomic Registers

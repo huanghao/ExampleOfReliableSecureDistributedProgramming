@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 
 @implements('ProbabilisticBroadcast')
-@uses('FairLossPointToPointLinks')
+@uses('FairLossPointToPointLinks', BasicLink, 'fll')
 class EagerProbabilisticBroadcast:
     """
     Algo 3.9
@@ -58,8 +58,9 @@ class EagerProbabilisticBroadcast:
 
 
 @implements('ProbabilisticBroadcast')
-@uses('FairLossPointToPointLinks')
-@uses('ProbabilisticBroadcast')  # an unreliable implementation
+@uses('FairLossPointToPointLinks', BasicLink, 'fll')
+@uses('ProbabilisticBroadcast', EagerProbabilisticBroadcast, 'upb')
+# an unreliable implementation
 class LazyProbabilisticBroadcast:
     """
     algo 3.10 lazy probabilistic broadcast

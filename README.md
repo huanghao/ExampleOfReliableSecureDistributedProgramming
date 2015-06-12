@@ -19,4 +19,3 @@ FIXME
 - implements+uses+conf to switch
 - re-enter message handler
 - eliminate tedious __init__()
-- uses(ifname, concrete, attrname)

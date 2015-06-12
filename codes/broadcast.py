@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 
 @implements('BestEffortBroadcast')
-@uses('PerfectPointToPointLinks')
+@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
 class BasicBroadcast:
     """
     algo 3.1
@@ -38,8 +38,8 @@ class BasicBroadcast:
 
 
 @implements('ReliableBroadcast')
-@uses('BestEffortBroadcast')
-@uses('PerfectFailureDetector')
+@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
 class LazyReliableBroadcast:
     """
     rely on the completeness property of the failure detector to ensure the
@@ -84,15 +84,11 @@ class LazyReliableBroadcast:
                 })
 
 
+@implements('ReliableBroadcast')
+@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
 class EagerReliableBroadcast:
     """
     algo 3.3 eager reliable broadcast
-
-    implements reliable broadcast
-    uses best-effort broadcast, instance beb
-
-    request Broadcast
-    indication Deliver
 
     A process that broadcast a message might deliver it and then crash, before
     the best-effort broadcast abstraction can even deliver the message to any
@@ -117,18 +113,12 @@ class EagerReliableBroadcast:
             trigger(self.beb, 'Broadcast', m)
 
 
+@implements('UniformReliableBroadcast')
+@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
 class AllAckUniformReliableBroadcast:
     """
     algo 3.4: All-Ack Uniform Reliable Broadcast
-
-    implements
-      uniform reliable broadcast, instance urb
-    uses
-      best-effort broadcast, instance beb.
-      perfect failure detector, instance p.
-
-    request Broadcast
-    indication Deliver
 
     uniform agreement: if a message m is delivered by some process
     (whether correct or faulty), then m is eventually delivered by every
@@ -178,11 +168,11 @@ class AllAckUniformReliableBroadcast:
                 self.upperlayer.trigger('Deliver', msg=payload)
 
 
+@implements('UniformReliableBroadcast')
+@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
 class MajorityAckUniformReliableBroadcast:
     """
     algo 3.5: Majority-Ack Uniform Reliable Broadcast
-    implements uniform reliable broadcast, instance urb
-    uses best-effort broadcast, instance beb
     """
     def __init__(self, upper, addr, peers):
         self.set_upper_layer(upper)

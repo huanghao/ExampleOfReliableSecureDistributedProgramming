@@ -2,18 +2,18 @@ import uuid
 import hashlib
 import logging
 
-from .basic import Store, trigger, start_timer
-from .links import FairLossPointToPointLinks
+from .basic import Store, trigger, start_timer, implements, uses
+from .links import BasicLink
 from .failure_detector import ExcludeOnTimeout, IncreasingTimeout
 
 log = logging.getLogger(__name__)
 
 
+@implements('LeaderElection')
+@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
 class MonarchicalLeaderElection:
     """
     Algo 2.6: Monarchical Leader Election
-
-    Implemented: LeaderElection
     """
     def __init__(self, upperlayer, addr, peers):
         self.set_upper_layer(upperlayer)
@@ -38,12 +38,11 @@ class MonarchicalLeaderElection:
         self.elect()
 
 
+@implements('EventualLeaderElection')
+@uses('EventuallyPerfectFailureDetector', IncreasingTimeout, 'p')
 class MonarchicalEventualLeaderElection:
     """
     Algo 2.8: monarchical eventual leader election
-
-    Implemnets: EventualLeaderElection
-    Uses: EventuallyPerfectFailureDetector, instance p
     """
     def __init__(self, upperlayer, addr, peers):
         self.set_upper_layer(upperlayer)
@@ -68,12 +67,11 @@ class MonarchicalEventualLeaderElection:
         self.elect()
 
 
+@implements('EventualLeaderElection')
+@uses('FairLossPointToPointLinks', BasicLink, 'fll')
 class ElectLowerEpoch:
     """
     Algorithm 2.9: Elect Lower Epoch
-
-    Implements: EventualLeaderDetector
-    Uses: FairLossPointToPointLinks
     """
     DELAY = 0.5
 

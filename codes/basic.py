@@ -4,18 +4,36 @@ import asyncio
 import pickle
 import hashlib
 import random
+from collections import defaultdict
 
 log = logging.getLogger(__name__)
 
+IFS = defaultdict(list)
 
-def implements(interface):
+
+class ABSClass(type):
+    def __new__(metacls, name, bases, namespace, **kw):
+        cls = type.__new__(metaclass, name, bases, dict(namespace))
+        return cls
+
+
+def implements(ifname):
     def decorator(cls):
+        IFS[ifname].append(cls)
         return cls
     return decorator
 
 
-def uses(*ifs):
+def uses(ifname, concrete, attr):
     def decorator(cls):
+        if ifname not in IFS:
+            raise ValueError("Undefined interface name: %s" % ifname)
+        if concrete not in IFS[ifname]:
+            raise ValueError("%s is not a %s" % (concrete, ifname))
+        if hasattr(cls, '__uses'):
+            cls.__uses.append((ifname, concrete, attr))
+        else:
+            cls.__uses = [(ifname, concrete, attr)]
         return cls
     return decorator
 
