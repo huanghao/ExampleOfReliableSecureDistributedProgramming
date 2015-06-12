@@ -4,21 +4,17 @@ import bisect
 import pickle
 from collections import defaultdict
 
-from .basic import implements, uses, trigger, start_timer, Store
+from .basic import implements, uses, trigger, start_timer, Store, ABC
 
 log = logging.getLogger(__name__)
 
 
 @implements('FairLossPointToPointLinks')
 class BasicLink:
-    def __init__(self, name, upper, udp):
+    def __init__(self, name, upper, udp, addr, peers):
         self.name = name
         self.upper = upper
         self.sendto = udp.register(name, self)
-        trigger(self, 'Init')
-
-    def upon_Init(self):
-        pass
 
     def upon_Send(self, p, m):
         self.sendto(m, p)
@@ -29,17 +25,11 @@ class BasicLink:
 
 @implements('StubbornPointToPointLinks')
 @uses('FairLossPointToPointLinks', BasicLink, 'fll')
-class RetransmitForever:
+class RetransmitForever(ABC):
     """
     Algorithm: 2.1
     """
     DELTA = 10
-
-    def __init__(self, name, upper, udp):
-        self.name = name
-        self.upper = upper
-        self.fll = BasicLink(self.name+'.fll', self, udp)
-        trigger(self, 'Init')
 
     def upon_Init(self):
         self.sent = set()
@@ -60,16 +50,10 @@ class RetransmitForever:
 
 @implements('PerfectPointToPointLinks')
 @uses('StubbornPointToPointLinks', RetransmitForever, 'sl')
-class EliminateDuplicates:
+class EliminateDuplicates(ABC):
     """
     Algorithm 2.2
     """
-    def __init__(self, name, upper, udp):
-        self.name = name
-        self.upper = upper
-        self.sl = RetransmitForever(self.name+'.sl', self, udp)
-        trigger(self, 'Init')
-
     def upon_Init(self):
         self.delivered = set()
 
@@ -85,13 +69,11 @@ class EliminateDuplicates:
 
 @implements('LoggedPerfectPointToPointLinks')
 @uses('StubbornPointToPointLinks', RetransmitForever, 'sl')
-class LogDelivered:
+class LogDelivered(ABC):
     """
     Algorithm 2.3
     """
-    def __init__(self, upper, udp):
-        self.upper = upper
-        self.sl = RetransmitForever(self, udp)
+    def __init__(self, *args):
         self.store = Store(self.pid)
         if self.store.exists():
             trigger(self, 'Recovery')
@@ -118,13 +100,11 @@ class LogDelivered:
 
 @implements('FIFOPerfectPointToPointLinks')
 @uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
-class SequenceNumber:
+class SequenceNumber(ABC):
     """
     Ex2.3: implements FIFO-order perfect point-to-point links
     """
-    def __init__(self, upper, addr):
-        self.set_upper_layer(upper)
-        self.pl = EliminateDuplicates(self, addr)
+    def upon_Init(self):
         self.seq = itertools.count(0)
         self.next = defaultdict(int)
         self.buffer = defaultdict(list)

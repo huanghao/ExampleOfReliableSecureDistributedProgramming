@@ -4,7 +4,7 @@ import logging
 import itertools
 from collections import defaultdict
 
-from .basic import implements, uses, trigger, start_timer
+from .basic import implements, uses, trigger, start_timer, ABC
 from .links import BasicLink
 
 log = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 @implements('ProbabilisticBroadcast')
 @uses('FairLossPointToPointLinks', BasicLink, 'fll')
-class EagerProbabilisticBroadcast:
+class EagerProbabilisticBroadcast(ABC):
     """
     Algo 3.9
     request Broadcast, indication Deliver
@@ -23,12 +23,6 @@ class EagerProbabilisticBroadcast:
     """
     R = 2  # rounds
     K = 3  # fanout
-
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.fll = BasicLink(self.name+'.fll', self, udp)
-        trigger(self, 'Init')
 
     def upon_Init(self):
         self.delivered = set()
@@ -61,7 +55,7 @@ class EagerProbabilisticBroadcast:
 @uses('FairLossPointToPointLinks', BasicLink, 'fll')
 @uses('ProbabilisticBroadcast', EagerProbabilisticBroadcast, 'upb')
 # an unreliable implementation
-class LazyProbabilisticBroadcast:
+class LazyProbabilisticBroadcast(ABC):
     """
     algo 3.10 lazy probabilistic broadcast
     part 1, data dissemintion
@@ -93,14 +87,6 @@ class LazyProbabilisticBroadcast:
 
     R = 2  # gossip rounds
     K = 3  # gossip fanout
-
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.fll = BasicLink(self.name+'.fll', self, udp)
-        self.upb = EagerProbabilisticBroadcast(
-            self.name+'.upb', self, udp, addr, peers)
-        trigger(self, 'Init')
 
     def upon_Init(self):
         self.next = defaultdict(int)

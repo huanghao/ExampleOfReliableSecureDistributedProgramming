@@ -4,7 +4,7 @@ import uuid
 import copy
 import logging
 
-from .basic import implements, uses, trigger
+from .basic import implements, uses, trigger, ABC
 from .links import EliminateDuplicates
 from .failure_detector import ExcludeOnTimeout
 
@@ -13,16 +13,14 @@ log = logging.getLogger(__name__)
 
 @implements('BestEffortBroadcast')
 @uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
-class BasicBroadcast:
+class BasicBroadcast(ABC):
     """
     algo 3.1
     validity: if a correct process broadcasts a message m,
     then every correct process eventually delivers m.
     """
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name = name
-        self.upper, self.addr, self.peers = upper, addr, peers
-        self.pl = EliminateDuplicates(self.name+'.pl', self, udp)
+    def upon_Init(self):
+        pass
 
     def upon_Broadcast(self, m):
         for p in self.peers:
@@ -40,7 +38,7 @@ class BasicBroadcast:
 @implements('ReliableBroadcast')
 @uses('BestEffortBroadcast', BasicBroadcast, 'beb')
 @uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
-class LazyReliableBroadcast:
+class LazyReliableBroadcast(ABC):
     """
     rely on the completeness property of the failure detector to ensure the
     broadcast agreement. If the failure detector does not ensure completeness
@@ -48,13 +46,6 @@ class LazyReliableBroadcast:
     relaying (e.g., messages broadcast by processes that crashed), and hence
     might violate agreement.
     """
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.beb = BasicBroadcast(self.name+'.beb', self, udp, addr, peers)
-        self.p = ExcludeOnTimeout(self.name+'.p', self, udp, addr, peers)
-        trigger(self, 'Init')
-
     def upon_Init(self):
         self.correct = set(self.peers)
         self.correct.add(self.addr)
@@ -86,7 +77,7 @@ class LazyReliableBroadcast:
 
 @implements('ReliableBroadcast')
 @uses('BestEffortBroadcast', BasicBroadcast, 'beb')
-class EagerReliableBroadcast:
+class EagerReliableBroadcast(ABC):
     """
     algo 3.3 eager reliable broadcast
 
@@ -97,10 +88,7 @@ class EagerReliableBroadcast:
     because even a process that delivers a message and later crashes may bring
     the application into a inconsistent state.
     """
-    def __init__(self, upper, addr, peers):
-        self.set_upper_layer(upper)
-        self.set_members(addr, peers)
-        self.beb = BasicBroadcast(self, addr, peers)
+    def upon_Init(self):
         self.delivered = set()
 
     def upon_Broadcast(self, msg):
@@ -116,7 +104,7 @@ class EagerReliableBroadcast:
 @implements('UniformReliableBroadcast')
 @uses('BestEffortBroadcast', BasicBroadcast, 'beb')
 @uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
-class AllAckUniformReliableBroadcast:
+class AllAckUniformReliableBroadcast(ABC):
     """
     algo 3.4: All-Ack Uniform Reliable Broadcast
 
@@ -128,11 +116,7 @@ class AllAckUniformReliableBroadcast:
     agreement would be violated if accuracy is not satisfied and validity
     would be violated if completeness is not satisfied.
     """
-    def __init__(self, upper, addr, peers):
-        self.set_upper_layer(upper)
-        self.set_members(addr, peers)
-        self.beb = BasicBroadcast(self, addr, peers)
-        self.p = ExcludeOnTimeout(self, addr, peers)
+    def upon_Init(self):
         self.delivered = set()
         self.pending = set()
         self.correct = set(self.peers)
@@ -170,14 +154,11 @@ class AllAckUniformReliableBroadcast:
 
 @implements('UniformReliableBroadcast')
 @uses('BestEffortBroadcast', BasicBroadcast, 'beb')
-class MajorityAckUniformReliableBroadcast:
+class MajorityAckUniformReliableBroadcast(ABC):
     """
     algo 3.5: Majority-Ack Uniform Reliable Broadcast
     """
-    def __init__(self, upper, addr, peers):
-        self.set_upper_layer(upper)
-        self.set_members(addr, peers)
-        self.beb = BasicBroadcast(self, addr, peers)
+    def upon_Init(self):
         self.delivered = set()
         self.pending = set()
         self.correct = set(self.peers)

@@ -11,10 +11,20 @@ log = logging.getLogger(__name__)
 IFS = defaultdict(list)
 
 
-class ABSClass(type):
-    def __new__(metacls, name, bases, namespace, **kw):
-        cls = type.__new__(metaclass, name, bases, dict(namespace))
-        return cls
+class ABC:
+    def __new__(cls, name, upper, udp, addr, peers):
+        self = object.__new__(cls)
+        self.name, self.upper = name, upper
+        self.addr, self.peers = addr, peers
+        self.members = set(peers) | {addr}
+
+        for ifname, concrete, attr in cls._uses:
+            that = concrete('%s.%s' % (name, attr), self, udp, addr, peers)
+            setattr(self, attr, that)
+        return self
+
+    def __init__(self, *args):
+        trigger(self, 'Init')
 
 
 def implements(ifname):
@@ -30,10 +40,10 @@ def uses(ifname, concrete, attr):
             raise ValueError("Undefined interface name: %s" % ifname)
         if concrete not in IFS[ifname]:
             raise ValueError("%s is not a %s" % (concrete, ifname))
-        if hasattr(cls, '__uses'):
-            cls.__uses.append((ifname, concrete, attr))
+        if hasattr(cls, '_uses'):
+            cls._uses.append((ifname, concrete, attr))
         else:
-            cls.__uses = [(ifname, concrete, attr)]
+            cls._uses = [(ifname, concrete, attr)]
         return cls
     return decorator
 

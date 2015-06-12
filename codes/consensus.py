@@ -19,7 +19,7 @@ Properties:
 from collections import defaultdict
 import logging
 
-from .basic import implements, uses, trigger
+from .basic import implements, uses, trigger, ABC
 from .links import EliminateDuplicates
 from .broadcast import BasicBroadcast, LazyReliableBroadcast
 from .failure_detector import ExcludeOnTimeout
@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 @implements('Consensus')
 @uses('BestEffortBroadcast', BasicBroadcast, 'beb')
 @uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
-class FloodingConsensus:
+class FloodingConsensus(ABC):
     """
     algo 5.1
 
@@ -51,14 +51,6 @@ class FloodingConsensus:
     where a process crashes, another O(N^2) message exchanges occur. In the
     worst case, the algorithm uses O(N^3) messages.
     """
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.members = set(self.peers) | {self.addr}
-        self.beb = BasicBroadcast(self.name+'.beb', self, udp, addr, peers)
-        self.p = ExcludeOnTimeout(self.name+'.p', self, udp, addr, peers)
-        trigger(self, 'Init')
-
     def upon_Init(self):
         self.correct = set(self.members)
         self.round = 1
@@ -119,21 +111,13 @@ class FloodingConsensus:
 @implements("Consensus")
 @uses('BestEffortBroadcast', BasicBroadcast, 'beb')
 @uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
-class HierarchicalConsensus:
+class HierarchicalConsensus(ABC):
     """
     Algorithm 5.2
 
     Performance: this algorithm requires N communication steps to terminate and
     exchanges O(N) messages in each round.
     """
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.members = set(self.peers) | {self.addr}
-        self.beb = BasicBroadcast(self.name+'.beb', self, udp, addr, peers)
-        self.p = ExcludeOnTimeout(self.name+'.p', self, udp, addr, peers)
-        trigger(self, 'Init')
-
     def upon_Init(self):
         self.detectedranks = set()
         self.round = 1
@@ -178,7 +162,7 @@ class HierarchicalConsensus:
 @implements('UniformConsensus')
 @uses('BestEffortBroadcast', BasicBroadcast, 'beb')
 @uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
-class FloodingUniformConsensus:
+class FloodingUniformConsensus(ABC):
     """
     Algorithm 5.3
 
@@ -194,14 +178,6 @@ class FloodingUniformConsensus:
     This algorithm always runs for N rounds and every process decides only in
     round N. Intuitively, this permits that one process crashes in every round.
     """
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.members = set(self.peers) | {self.addr}
-        self.beb = BasicBroadcast(self.name+'.beb', self, udp, addr, peers)
-        self.p = ExcludeOnTimeout(self.name+'.p', self, udp, addr, peers)
-        trigger(self, 'Init')
-
     def onup_Init(self):
         self.correct = set(self.member)
         self.round = 1
@@ -248,8 +224,9 @@ class FloodingUniformConsensus:
 @implements('UniformConsensus')
 @uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
 @uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+@uses('ReliableBroadcast', LazyReliableBroadcast, 'rb')
 @uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
-class HierarchicalUniformConsensus:
+class HierarchicalUniformConsensus(ABC):
     """
     Algorithm 5.4
 
@@ -285,17 +262,6 @@ class HierarchicalUniformConsensus:
     of a leader adds two additional communication steps and O(N) additional
     messages.
     """
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.members = set(self.peers) | {self.addr}
-        self.pl = EliminateDuplicates(self.name+'.pl', self, udp)
-        self.beb = BasicBroadcast(self.name+'.beb', self, udp, addr, peers)
-        self.rb = LazyReliableBroadcast(
-            self.name+'.br', self, udp, addr, peers)
-        self.p = ExcludeOnTimeout(self.name+'.p', self, udp, addr, peers)
-        trigger(self, 'Init')
-
     def upon_Init(self):
         self.detectedranks = set()
         self.ackransk = set()

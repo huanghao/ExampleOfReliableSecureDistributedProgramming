@@ -18,4 +18,3 @@ FIXME
 - DSL
 - implements+uses+conf to switch
 - re-enter message handler
-- eliminate tedious __init__()

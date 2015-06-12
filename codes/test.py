@@ -14,7 +14,7 @@ for ifname in sorted(IFS.keys(), key=lambda i: ''.join(reversed(i))):
     print(ifname)
     for cls in classes:
         print('-', cls)
-        if hasattr(cls, '__uses'):
-            for i in cls.__uses:
+        if hasattr(cls, '_uses'):
+            for i in cls._uses:
                 print('  +', i)
     print()

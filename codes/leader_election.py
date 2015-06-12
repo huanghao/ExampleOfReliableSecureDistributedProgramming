@@ -2,7 +2,7 @@ import uuid
 import hashlib
 import logging
 
-from .basic import Store, trigger, start_timer, implements, uses
+from .basic import Store, trigger, start_timer, implements, uses, ABC
 from .links import BasicLink
 from .failure_detector import ExcludeOnTimeout, IncreasingTimeout
 
@@ -11,14 +11,11 @@ log = logging.getLogger(__name__)
 
 @implements('LeaderElection')
 @uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
-class MonarchicalLeaderElection:
+class MonarchicalLeaderElection(ABC):
     """
     Algo 2.6: Monarchical Leader Election
     """
-    def __init__(self, upperlayer, addr, peers):
-        self.set_upper_layer(upperlayer)
-        self.set_members(addr, peers)
-        self.p = ExcludeOnTimeout(self, addr, peers)
+    def upon_Init(self):
         self.suspected = set()
         self.leader = None
         self.elect()
@@ -40,14 +37,11 @@ class MonarchicalLeaderElection:
 
 @implements('EventualLeaderElection')
 @uses('EventuallyPerfectFailureDetector', IncreasingTimeout, 'p')
-class MonarchicalEventualLeaderElection:
+class MonarchicalEventualLeaderElection(ABC):
     """
     Algo 2.8: monarchical eventual leader election
     """
-    def __init__(self, upperlayer, addr, peers):
-        self.set_upper_layer(upperlayer)
-        self.set_members(addr, peers)
-        self.p = IncreasingTimeout(self, addr, peers)
+    def upon_Init(self):
         self.suspected = set()
         self.leader = None
         self.elect()
@@ -69,17 +63,14 @@ class MonarchicalEventualLeaderElection:
 
 @implements('EventualLeaderElection')
 @uses('FairLossPointToPointLinks', BasicLink, 'fll')
-class ElectLowerEpoch:
+class ElectLowerEpoch(ABC):
     """
     Algorithm 2.9: Elect Lower Epoch
     """
     DELAY = 0.5
 
-    def __init__(self, upper, addr, peers):
-        self.set_upper_layer(upper)
-        self.set_members(addr, peers)
-        self.fll = FairLossPointToPointLinks.create(self, addr)
-        sid = hashlib.md5(str(addr).encode()).hexdigest()
+    def __init__(self, *args):
+        sid = hashlib.md5(str(self.addr).encode()).hexdigest()
         self.store = Store(sid)
         if self.store.exists():
             self.trigger('Recovery')

@@ -19,7 +19,7 @@ multi-reader register.
 - An atomic register is even stronger and provides a strict form of consistency
   even in the face of concurrency and failures.
 """
-from .basic import implements, uses, trigger
+from .basic import implements, uses, trigger, ABC
 from .links import EliminateDuplicates
 from .broadcast import BasicBroadcast
 from .failure_detector import ExcludeOnTimeout
@@ -29,7 +29,7 @@ from .failure_detector import ExcludeOnTimeout
 @uses('BestEffortBroadcast', BasicBroadcast, 'beb')
 @uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
 @uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
-class ReadOneWriteAll:
+class ReadOneWriteAll(ABC):
     """
     Algorithm 4.1: the reader reads one value and the writer writes all values
 
@@ -42,14 +42,6 @@ class ReadOneWriteAll:
         written; a read that is concurrent with a write returns the last value
         written or the value concurrently written.
     """
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.beb = BasicBroadcast(self.name+'.beb', self, udp, addr, peers)
-        self.pl = EliminateDuplicates(self.name+'.pl', self, udp)
-        self.p = ExcludeOnTimeout(self.name+'.p', self, udp, addr, peers)
-        trigger(self, 'Init')
-
     def upon_Init(self):
         self.val = None
         self.correct = set(self.peers) + {self.addr}
@@ -85,7 +77,7 @@ class ReadOneWriteAll:
 @implements('OneNRegularRegister')
 @uses('BestEffortBroadcast', BasicBroadcast, 'beb')
 @uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
-class MajorityVotingRegularRegister:
+class MajorityVotingRegularRegister(ABC):
     """
     Algorithm 4.2
 
@@ -95,13 +87,6 @@ class MajorityVotingRegularRegister:
     any failure detection abstraction. Instead this algorithm assumes that a
     majority of the processes is correct.
     """
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.beb = BasicBroadcast(self.name+'.beb', self, udp, addr, peers)
-        self.pl = EliminateDuplicates(self.name+'.pl', self, udp)
-        trigger(self, 'Init')
-
     def upon_Init(self):
         self.N = (len(self.peers) + 1)
         self.ts = 0
@@ -162,17 +147,10 @@ class MajorityVotingRegularRegister:
 
 @implements('OneOneAtomicRegister')
 @uses('OneNRegularRegister', MajorityVotingRegularRegister, 'onrr')
-class ONRRtoOOAR:
+class ONRRtoOOAR(ABC):
     """
     Algorithm 4.3: From (1, N) Regular to (1, 1) Atomic Registers
     """
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.onrr = MajorityVotingRegularRegister(
-            self.name+'.onrr', self, udp, addr, peers)
-        trigger(self, 'Init')
-
     def upon_Init(self):
         self.ts, self.val = 0, None
         self.wts = 0
@@ -196,20 +174,13 @@ class ONRRtoOOAR:
 
 @implements('OneNAtomicRegister')
 @uses('OneOneAtomicRegister', ONRRtoOOAR, 'ooar')
-class OOARtoONAR:
+class OOARtoONAR(ABC):
     """
     Algorithm 4.4: From (1, 1) Atomic to (1, N) Atomic Registers
 
     Ordering: if a read returns a value v and a subsequent read returns a value
     w, then the write of w does not precede the write of v.
     """
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.ooar = ONRRtoOOAR(
-            self.name+'.ooar', self, udp, addr, peers)
-        trigger(self, 'Init')
-
     def upon_Init(self):
         self.ts = 0
         self.acks = 0

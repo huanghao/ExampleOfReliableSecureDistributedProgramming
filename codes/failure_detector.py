@@ -1,7 +1,7 @@
 import uuid
 import logging
 
-from .basic import trigger, implements, uses, start_timer
+from .basic import trigger, implements, uses, start_timer, ABC
 from .links import EliminateDuplicates
 
 log = logging.getLogger(__name__)
@@ -9,21 +9,13 @@ log = logging.getLogger(__name__)
 
 @implements('PerfectFailureDetector')
 @uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
-class ExcludeOnTimeout:
+class ExcludeOnTimeout(ABC):
     """
     Algorithm 2.5: Exclude on Timeout
     Request: Send
     Indication: Crash
     """
     TIMEOUT = 10
-
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name = name
-        self.upper = upper
-        self.addr = addr
-        self.peers = peers
-        self.pl = EliminateDuplicates(self.name+'.pl', self, udp)
-        trigger(self, 'Init')
 
     def upon_Init(self):
         self.alive = set(self.peers)
@@ -54,19 +46,13 @@ class ExcludeOnTimeout:
 
 @implements('EventuallyPerfectFailureDetector')
 @uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
-class IncreasingTimeout:
+class IncreasingTimeout(ABC):
     """
     Algorithm 2.7: Increasing Timeout
     Request: Send
     Indication: Suspect, Restore
     """
     DELAY = 0.5
-
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name = name
-        self.upper, self.addr, self.peers = upper, addr, peers
-        self.pl = EliminateDuplicates(self.name+'.pl', self, udp)
-        trigger(self, 'Init')
 
     def upon_Init(self):
         self.alive = set(self.peers)

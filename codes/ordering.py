@@ -4,13 +4,13 @@ from collections import defaultdict, OrderedDict
 
 log = logging.getLogger(__name__)
 
-from .basic import implements, uses, trigger, mhash
+from .basic import implements, uses, trigger, mhash, ABC
 from .broadcast import LazyReliableBroadcast
 
 
 @implements('FIFOReliableBroadcast')
 @uses('ReliableBroadcast', LazyReliableBroadcast, 'rb')
-class BroadcastWithSequenceNumber:
+class BroadcastWithSequenceNumber(ABC):
     """
     Algorithm 3.12
 
@@ -18,12 +18,6 @@ class BroadcastWithSequenceNumber:
     message m2, then no correct process delivers m2 unless it has already
     delivered m1.
     """
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.rb = LazyReliableBroadcast(name+'.rb', self, udp, addr, peers)
-        trigger(self, 'Init')
-
     def upon_Init(self):
         self.lsn = itertools.count(0)
         self.pending = defaultdict(dict)
@@ -48,19 +42,13 @@ class BroadcastWithSequenceNumber:
 
 @implements('CausalOrderReliableBroadcast')
 @uses('ReliableBroadcast', LazyReliableBroadcast, 'rb')
-class NoWaitingCausalBroadcast:
+class NoWaitingCausalBroadcast(ABC):
     """
     Algorithm 3.13
 
     Causal delivery: for any message m1 that potentially caused a message m2,
     i.e., m1 -> m2, no process delivers m2 unless it has already delivered m1.
     """
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.rb = LazyReliableBroadcast(name+'.rb', self, udp, addr, peers)
-        trigger(self, 'Init')
-
     def upon_Init(self):
         self.delivered = set()
         self.past = OrderedDict()
@@ -96,17 +84,11 @@ class NoWaitingCausalBroadcast:
 
 @implements('CausalOrderReliableBroadcast')
 @uses('ReliableBroadcast', LazyReliableBroadcast, 'rb')
-class WaitingCausalBroadcast:
+class WaitingCausalBroadcast(ABC):
     """
     algo 3.15
     using vector clock
     """
-    def __init__(self, name, upper, udp, addr, peers):
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.rb = LazyReliableBroadcast(name+'.rb', self, udp, addr, peers)
-        trigger(self, 'Init')
-
     def upon_Init(self):
         members = sorted(list(self.peers) + [self.addr])
         self.rank = lambda p: members.index(p)
