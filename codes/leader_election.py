@@ -35,11 +35,11 @@ class MonarchicalLeaderElection(ABC):
         self.elect()
 
 
-@implements('EventualLeaderElection')
+@implements('EventualLeaderDetector')
 @uses('EventuallyPerfectFailureDetector', IncreasingTimeout, 'p')
 class MonarchicalEventualLeaderElection(ABC):
     """
-    Algo 2.8: monarchical eventual leader election
+    Algo 2.8: monarchical eventual leader detection
     """
     def upon_Init(self):
         self.suspected = set()
@@ -61,7 +61,7 @@ class MonarchicalEventualLeaderElection(ABC):
         self.elect()
 
 
-@implements('EventualLeaderElection')
+@implements('EventualLeaderDetector')
 @uses('FairLossPointToPointLinks', BasicLink, 'fll')
 class ElectLowerEpoch(ABC):
     """

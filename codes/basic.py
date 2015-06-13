@@ -17,6 +17,7 @@ class ABC:
         self.name, self.upper = name, upper
         self.addr, self.peers = addr, peers
         self.members = set(peers) | {addr}
+        self.N = len(self.members)
 
         for ifname, concrete, attr in cls._uses:
             that = concrete('%s.%s' % (name, attr), self, udp, addr, peers)

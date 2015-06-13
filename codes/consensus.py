@@ -23,6 +23,7 @@ from .basic import implements, uses, trigger, ABC
 from .links import EliminateDuplicates
 from .broadcast import BasicBroadcast, LazyReliableBroadcast
 from .failure_detector import ExcludeOnTimeout
+from .leader_election import ElectLowerEpoch
 
 log = logging.getLogger(__name__)
 
@@ -318,3 +319,133 @@ class HierarchicalUniformConsensus(ABC):
         elif m['typ'] == 'decided':
             self.decision = m['proposal']
             trigger(self.upper, 'Decide', self.decision)
+
+
+@implements('EpochChange')
+@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
+@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+@uses('EventualLeaderDetector', ElectLowerEpoch, 'o')
+class LeaderBasedEpochChange(ABC):
+    """
+    Algorithm 5.5: Leader-based Epoch-change
+
+    Indication: <StartEpoch | ts, l>: starts the epoch identified by timestamp
+    ts with leader l.
+
+    - Monotonicity: If a correct process starts an epoch(ts,l) and later starts
+    and epoch (ts', l'), then ts' > ts.
+    - Consistency: If a correct process tarts and epoch (ts, l) and another
+    correct process starts an epoch (ts', l') with ts = ts', then l = l'.
+    - Eventual leadership: there is a time after which every correct process
+    has started some epoch and starts no further epoch, such that the last
+    epoch started at every correct process is epoch (ts, l) and process l is
+    correct.
+
+    When initialized, it's assumed that a default epoch with ts 0 and a leader
+    l0 is active at all correct processes.
+    """
+    def upon_Init(self):
+        self.trusted = None
+        self.lastts = 0
+        self.ts = self.rank(self.addr)
+
+    def rank(self, p):
+        return sorted(self.members).index(p)
+
+    def new_epoch(self):
+        self.ts += self.N
+        trigger(self.beb, 'Broadcast', {
+            'typ': 'newepoch',
+            'ts': self.ts,
+            })
+
+    def upon_Trust(self, p):
+        self.trusted = p
+        if p == self.addr:
+            self.new_epoch()
+
+    def upon_Deliver(self, q, m):
+        if m['typ'] == 'newepoch':
+            newts = m['ts']
+            if q == self.trusted and newts > self.lastts:
+                self.lastts = newts
+                trigger(self.upper, 'StartEpoch', newts, q)
+            else:
+                trigger(self.pl, 'Send', q, {'typ': 'nack'})
+        elif m['typ'] == 'nack':
+            if self.trusted == self.addr:
+                self.new_epoch()
+
+
+@implements('EpochConsensus')
+@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
+@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+class ReadWriteEpochChange(ABC):
+    """
+    Algorithm 5.6
+
+    Events:
+    - Request <ep, Propose | v>: Proposes value a for epoch consensus. Executed
+    only by the leader l.
+    - Request <ep, Abort>: Aborts epoch consensus.
+    - Indication <ep, Decide | v>: Outputs a decided value v of epoch consensus
+    - Indication <ep, Aborted | state>: Singals that epoch consensus has
+    completed the abort and outputs internal state.
+    """
+    def upon_Init(self, state):
+        self.valts, self.val = state
+        self.tmpval = None
+        self.states = {}
+        self.accepted = 0
+
+    def upon_Propose(self, v):  # only leader l
+        self.tmpval = v
+        trigger(self.beb, 'Broadcast', {'typ': 'read'})
+
+    def upon_Deliver(self, q, m):
+        if m['typ'] == 'read':
+            trigger(self.pl, 'Send', q, {
+                'typ': 'state',
+                'ts': self.valts,
+                'val': self.val,
+                })
+        elif m['typ'] == 'state':  # only leader l
+            self.states[q] = (m['ts'], m['val'])
+        elif m['typ'] == 'write':
+            self.valts, self.val = m['ts'], m['val']
+            trigger(self.pl, 'Send', q, {'typ': 'accept'})
+        elif m['typ'] == 'accept':  # only leader l
+            self.accepted += 1
+            if self.accepted > self.N / 2:
+                self.accepted = 0
+                trigger(self.beb, 'Broadcast', {
+                    'typ': 'decided',
+                    'val': self.tmpval,
+                    })
+        elif m['typ'] == 'decided':
+            trigger(self.upper, 'Decide', m['val'])
+
+    def check_to_write(self):  # only leader l
+        if len(self.states) > self.N / 2:
+            ts, v = max(self.states.values())
+            if v:
+                self.tmpval = v
+            self.states = {}
+            trigger(self.beb, 'Broadcast', {
+                'typ': 'write',
+                'ts': self.ts,
+                'val': self.tmpval,
+                })
+
+    def upon_Abort(self):
+        trigger(self.upper, 'Aborted', self.valts, self.val)
+        # halt  # stop operating when aborted
+
+
+@implements('UniformConsensus')
+@uses('EpochChange')
+@uses('EpochConsensus')  # multiple instances
+class LeaderDrivenConsensus(ABC):
+    """
+    Algorithm 5.7
+    """
