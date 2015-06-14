@@ -11,23 +11,6 @@ log = logging.getLogger(__name__)
 IFS = defaultdict(list)
 
 
-class ABC:
-    def __new__(cls, name, upper, udp, addr, peers):
-        self = object.__new__(cls)
-        self.name, self.upper = name, upper
-        self.addr, self.peers = addr, peers
-        self.members = set(peers) | {addr}
-        self.N = len(self.members)
-
-        for ifname, concrete, attr in cls._uses:
-            that = concrete('%s.%s' % (name, attr), self, udp, addr, peers)
-            setattr(self, attr, that)
-        return self
-
-    def __init__(self, *args):
-        trigger(self, 'Init')
-
-
 def implements(ifname):
     def decorator(cls):
         IFS[ifname].append(cls)
@@ -47,6 +30,18 @@ def uses(ifname, concrete, attr):
             cls._uses = [(ifname, concrete, attr)]
         return cls
     return decorator
+
+
+class ABC:
+    def __init__(self, name, upper, udp, addr, peers):
+        self.name, self.upper = name, upper
+        self.addr, self.peers = addr, peers
+        self.members = set(peers) | {addr}
+        self.N = len(self.members)
+        for ifname, concrete, attr in self._uses:
+            that = concrete('%s.%s' % (name, attr), self, udp, addr, peers)
+            setattr(self, attr, that)
+        trigger(self, 'Init')
 
 
 def trigger(obj, event, *attrs):

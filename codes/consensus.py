@@ -443,8 +443,8 @@ class ReadWriteEpochChange(ABC):
 
 
 @implements('UniformConsensus')
-@uses('EpochChange')
-@uses('EpochConsensus')  # multiple instances
+@uses('EpochChange', LeaderBasedEpochChange, 'x')
+@uses('EpochConsensus', ReadWriteEpochChange, 'y')  # multiple instances
 class LeaderDrivenConsensus(ABC):
     """
     Algorithm 5.7
