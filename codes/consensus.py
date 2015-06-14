@@ -20,17 +20,13 @@ from collections import defaultdict
 import logging
 
 from .basic import implements, uses, trigger, ABC
-from .links import EliminateDuplicates
-from .broadcast import BasicBroadcast, LazyReliableBroadcast
-from .failure_detector import ExcludeOnTimeout
-from .leader_election import MonarchicalEventualLeaderElection
 
 log = logging.getLogger(__name__)
 
 
 @implements('Consensus')
-@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
-@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
+@uses('BestEffortBroadcast', 'beb')
+@uses('PerfectFailureDetector', 'p')
 class FloodingConsensus(ABC):
     """
     algo 5.1
@@ -110,8 +106,8 @@ class FloodingConsensus(ABC):
 
 
 @implements("Consensus")
-@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
-@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
+@uses('BestEffortBroadcast', 'beb')
+@uses('PerfectFailureDetector', 'p')
 class HierarchicalConsensus(ABC):
     """
     Algorithm 5.2
@@ -161,8 +157,8 @@ class HierarchicalConsensus(ABC):
 
 
 @implements('UniformConsensus')
-@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
-@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
+@uses('BestEffortBroadcast', 'beb')
+@uses('PerfectFailureDetector', 'p')
 class FloodingUniformConsensus(ABC):
     """
     Algorithm 5.3
@@ -223,10 +219,10 @@ class FloodingUniformConsensus(ABC):
 
 
 @implements('UniformConsensus')
-@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
-@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
-@uses('ReliableBroadcast', LazyReliableBroadcast, 'rb')
-@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
+@uses('PerfectPointToPointLinks', 'pl')
+@uses('BestEffortBroadcast', 'beb')
+@uses('ReliableBroadcast', 'rb')
+@uses('PerfectFailureDetector', 'p')
 class HierarchicalUniformConsensus(ABC):
     """
     Algorithm 5.4
@@ -322,9 +318,9 @@ class HierarchicalUniformConsensus(ABC):
 
 
 @implements('EpochChange')
-@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
-@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
-@uses('EventualLeaderDetector', MonarchicalEventualLeaderElection, 'o')
+@uses('PerfectPointToPointLinks', 'pl')
+@uses('BestEffortBroadcast', 'beb')
+@uses('EventualLeaderDetector', 'o')
 class LeaderBasedEpochChange(ABC):
     """
     Algorithm 5.5: Leader-based Epoch-change
@@ -378,8 +374,8 @@ class LeaderBasedEpochChange(ABC):
 
 
 @implements('EpochConsensus')
-@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
-@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+@uses('PerfectPointToPointLinks', 'pl')
+@uses('BestEffortBroadcast', 'beb')
 class ReadWriteEpochChange(ABC):
     """
     Algorithm 5.6
@@ -443,8 +439,8 @@ class ReadWriteEpochChange(ABC):
 
 
 @implements('UniformConsensus')
-@uses('EpochChange', LeaderBasedEpochChange, 'x')
-@uses('EpochConsensus', ReadWriteEpochChange, 'y')  # multiple instances
+@uses('EpochChange', 'x')
+@uses('EpochConsensus', 'y')  # multiple instances
 class LeaderDrivenConsensus(ABC):
     """
     Algorithm 5.7

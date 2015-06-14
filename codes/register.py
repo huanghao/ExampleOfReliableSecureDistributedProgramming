@@ -20,15 +20,12 @@ multi-reader register.
   even in the face of concurrency and failures.
 """
 from .basic import implements, uses, trigger, ABC
-from .links import EliminateDuplicates
-from .broadcast import BasicBroadcast
-from .failure_detector import ExcludeOnTimeout
 
 
 @implements('OneNRegularRegister')
-@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
-@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
-@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
+@uses('BestEffortBroadcast', 'beb')
+@uses('PerfectPointToPointLinks', 'pl')
+@uses('PerfectFailureDetector', 'p')
 class ReadOneWriteAll(ABC):
     """
     Algorithm 4.1: the reader reads one value and the writer writes all values
@@ -75,8 +72,8 @@ class ReadOneWriteAll(ABC):
 
 
 @implements('OneNRegularRegister')
-@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
-@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
+@uses('BestEffortBroadcast', 'beb')
+@uses('PerfectPointToPointLinks', 'pl')
 class MajorityVotingRegularRegister(ABC):
     """
     Algorithm 4.2
@@ -146,7 +143,7 @@ class MajorityVotingRegularRegister(ABC):
 
 
 @implements('OneOneAtomicRegister')
-@uses('OneNRegularRegister', MajorityVotingRegularRegister, 'onrr')
+@uses('OneNRegularRegister', 'onrr')
 class ONRRtoOOAR(ABC):
     """
     Algorithm 4.3: From (1, N) Regular to (1, 1) Atomic Registers
@@ -173,7 +170,7 @@ class ONRRtoOOAR(ABC):
 
 
 @implements('OneNAtomicRegister')
-@uses('OneOneAtomicRegister', ONRRtoOOAR, 'ooar')
+@uses('OneOneAtomicRegister', 'ooar')
 class OOARtoONAR(ABC):
     """
     Algorithm 4.4: From (1, 1) Atomic to (1, N) Atomic Registers

@@ -18,16 +18,14 @@ def implements(ifname):
     return decorator
 
 
-def uses(ifname, concrete, attr):
+def uses(ifname, attr):
     def decorator(cls):
         if ifname not in IFS:
             raise ValueError("Undefined interface name: %s" % ifname)
-        if concrete not in IFS[ifname]:
-            raise ValueError("%s is not a %s" % (concrete, ifname))
         if hasattr(cls, '_uses'):
-            cls._uses.append((ifname, concrete, attr))
+            cls._uses.append((ifname, attr))
         else:
-            cls._uses = [(ifname, concrete, attr)]
+            cls._uses = [(ifname, attr)]
         return cls
     return decorator
 
@@ -40,7 +38,10 @@ class ABC:
         self.N = len(self.members)
         if init:
             trigger(self, 'Init')
-        for ifname, concrete, attr in self._uses:
+
+        from .ifconf import get_implementation
+        for ifname, attr in self._uses:
+            concrete = get_implementation(ifname)
             that = concrete('%s.%s' % (name, attr), self, udp, addr, peers)
             setattr(self, attr, that)
 

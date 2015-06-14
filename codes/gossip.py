@@ -5,13 +5,12 @@ import itertools
 from collections import defaultdict
 
 from .basic import implements, uses, trigger, start_timer, ABC
-from .links import BasicLink
 
 log = logging.getLogger(__name__)
 
 
-@implements('ProbabilisticBroadcast')
-@uses('FairLossPointToPointLinks', BasicLink, 'fll')
+@implements('UnreliableProbabilisticBroadcast')
+@uses('FairLossPointToPointLinks', 'fll')
 class EagerProbabilisticBroadcast(ABC):
     """
     Algo 3.9
@@ -52,9 +51,8 @@ class EagerProbabilisticBroadcast(ABC):
 
 
 @implements('ProbabilisticBroadcast')
-@uses('FairLossPointToPointLinks', BasicLink, 'fll')
-@uses('ProbabilisticBroadcast', EagerProbabilisticBroadcast, 'upb')
-# an unreliable implementation
+@uses('FairLossPointToPointLinks', 'fll')
+@uses('UnreliableProbabilisticBroadcast', 'upb')
 class LazyProbabilisticBroadcast(ABC):
     """
     algo 3.10 lazy probabilistic broadcast

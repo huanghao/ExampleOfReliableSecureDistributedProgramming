@@ -5,14 +5,12 @@ import copy
 import logging
 
 from .basic import implements, uses, trigger, ABC
-from .links import EliminateDuplicates
-from .failure_detector import ExcludeOnTimeout
 
 log = logging.getLogger(__name__)
 
 
 @implements('BestEffortBroadcast')
-@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
+@uses('PerfectPointToPointLinks', 'pl')
 class BasicBroadcast(ABC):
     """
     algo 3.1
@@ -34,8 +32,8 @@ class BasicBroadcast(ABC):
 
 
 @implements('ReliableBroadcast')
-@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
-@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
+@uses('BestEffortBroadcast', 'beb')
+@uses('PerfectFailureDetector', 'p')
 class LazyReliableBroadcast(ABC):
     """
     rely on the completeness property of the failure detector to ensure the
@@ -74,7 +72,7 @@ class LazyReliableBroadcast(ABC):
 
 
 @implements('ReliableBroadcast')
-@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+@uses('BestEffortBroadcast', 'beb')
 class EagerReliableBroadcast(ABC):
     """
     algo 3.3 eager reliable broadcast
@@ -100,8 +98,8 @@ class EagerReliableBroadcast(ABC):
 
 
 @implements('UniformReliableBroadcast')
-@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
-@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
+@uses('BestEffortBroadcast', 'beb')
+@uses('PerfectFailureDetector', 'p')
 class AllAckUniformReliableBroadcast(ABC):
     """
     algo 3.4: All-Ack Uniform Reliable Broadcast
@@ -151,7 +149,7 @@ class AllAckUniformReliableBroadcast(ABC):
 
 
 @implements('UniformReliableBroadcast')
-@uses('BestEffortBroadcast', BasicBroadcast, 'beb')
+@uses('BestEffortBroadcast', 'beb')
 class MajorityAckUniformReliableBroadcast(ABC):
     """
     algo 3.5: Majority-Ack Uniform Reliable Broadcast

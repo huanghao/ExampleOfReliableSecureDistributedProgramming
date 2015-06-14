@@ -5,11 +5,10 @@ from collections import defaultdict, OrderedDict
 log = logging.getLogger(__name__)
 
 from .basic import implements, uses, trigger, mhash, ABC
-from .broadcast import LazyReliableBroadcast
 
 
 @implements('FIFOReliableBroadcast')
-@uses('ReliableBroadcast', LazyReliableBroadcast, 'rb')
+@uses('ReliableBroadcast', 'rb')
 class BroadcastWithSequenceNumber(ABC):
     """
     Algorithm 3.12
@@ -41,7 +40,7 @@ class BroadcastWithSequenceNumber(ABC):
 
 
 @implements('CausalOrderReliableBroadcast')
-@uses('ReliableBroadcast', LazyReliableBroadcast, 'rb')
+@uses('ReliableBroadcast', 'rb')
 class NoWaitingCausalBroadcast(ABC):
     """
     Algorithm 3.13
@@ -83,7 +82,7 @@ class NoWaitingCausalBroadcast(ABC):
 
 
 @implements('CausalOrderReliableBroadcast')
-@uses('ReliableBroadcast', LazyReliableBroadcast, 'rb')
+@uses('ReliableBroadcast', 'rb')
 class WaitingCausalBroadcast(ABC):
     """
     algo 3.15

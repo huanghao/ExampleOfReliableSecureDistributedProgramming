@@ -1,8 +1,9 @@
-import logging
-import itertools
+import uuid
 import bisect
 import pickle
-from collections import defaultdict
+import logging
+import itertools
+from collections import defaultdict, OrderedDict
 
 from .basic import implements, uses, trigger, start_timer, Store, ABC
 
@@ -24,10 +25,11 @@ class BasicLink:
 
 
 @implements('StubbornPointToPointLinks')
-@uses('FairLossPointToPointLinks', BasicLink, 'fll')
+@uses('FairLossPointToPointLinks', 'fll')
 class RetransmitForever(ABC):
     """
     Algorithm: 2.1
+    make sure its messages are eventually delivered by the destination process
     """
     DELTA = 10
 
@@ -41,18 +43,63 @@ class RetransmitForever(ABC):
         start_timer(self.DELTA, self.upon_Timeout)
 
     def upon_Send(self, p, m):
-        trigger(self.fll, 'Send', p, m)
         self.sent.add((p, pickle.dumps(m)))
+        trigger(self.fll, 'Send', p, m)
 
     def upon_Deliver(self, q, m):
         trigger(self.upper, 'Deliver', q, m)
 
 
+@implements('StubbornPointToPointLinks')
+@uses('FairLossPointToPointLinks', 'fll')
+class RetransmitWithACK(ABC):
+    DELTA = 10
+
+    def upon_Init(self):
+        self.sent = OrderedDict()
+        start_timer(self.DELTA, self.upon_Timeout)
+
+    def upon_Timeout(self):
+        for (p, mid), m in self.sent.items():
+            trigger(self.fll, 'Send', p, {
+                'typ': 'data',
+                'mid': mid,
+                'data': m,
+                })
+        start_timer(self.DELTA, self.upon_Timeout)
+
+    def upon_Send(self, p, m):
+        mid = uuid.uuid4()
+        self.sent[(p, mid)] = m
+        trigger(self.fll, 'Send', p, {
+            'typ': 'data',
+            'mid': mid,
+            'data': m,
+            })
+
+    def upon_Deliver(self, q, m):
+        if m['typ'] == 'data':
+            trigger(self.upper, 'Deliver', q, m['data'])
+            trigger(self.fll, 'Send', q, {
+                'typ': 'ack',
+                'mid': m['mid'],
+                })
+        else:
+            assert m['typ'] == 'ack'
+            k = (q, m['mid'])
+            if k in self.sent:
+                self.sent.pop(k)
+
+
 @implements('PerfectPointToPointLinks')
-@uses('StubbornPointToPointLinks', RetransmitForever, 'sl')
+@uses('StubbornPointToPointLinks', 'sl')
 class EliminateDuplicates(ABC):
     """
     Algorithm 2.2
+    also called the reliable links
+
+    Reliable delivery: If a correct process p sends a message m to a correct
+    process q, then q eventually delivers m.
     """
     def upon_Init(self):
         self.delivered = set()
@@ -68,7 +115,7 @@ class EliminateDuplicates(ABC):
 
 
 @implements('LoggedPerfectPointToPointLinks')
-@uses('StubbornPointToPointLinks', RetransmitForever, 'sl')
+@uses('StubbornPointToPointLinks', 'sl')
 class LogDelivered(ABC):
     """
     Algorithm 2.3
@@ -99,7 +146,7 @@ class LogDelivered(ABC):
 
 
 @implements('FIFOPerfectPointToPointLinks')
-@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
+@uses('PerfectPointToPointLinks', 'pl')
 class SequenceNumber(ABC):
     """
     Ex2.3: implements FIFO-order perfect point-to-point links

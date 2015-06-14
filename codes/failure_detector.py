@@ -2,13 +2,12 @@ import uuid
 import logging
 
 from .basic import trigger, implements, uses, start_timer, ABC
-from .links import EliminateDuplicates
 
 log = logging.getLogger(__name__)
 
 
 @implements('PerfectFailureDetector')
-@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
+@uses('PerfectPointToPointLinks', 'pl')
 class ExcludeOnTimeout(ABC):
     """
     Algorithm 2.5: Exclude on Timeout
@@ -45,7 +44,7 @@ class ExcludeOnTimeout(ABC):
 
 
 @implements('EventuallyPerfectFailureDetector')
-@uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
+@uses('PerfectPointToPointLinks', 'pl')
 class IncreasingTimeout(ABC):
     """
     Algorithm 2.7: Increasing Timeout
@@ -76,5 +75,5 @@ class IncreasingTimeout(ABC):
         start_timer(self.delay, self.upon_Timeout)
 
     def upon_Deliver(self, q, m):
-        log.debug('%s <- %s (%s)', self.addr[1], q[1], m['heartbeat'])
+        # log.debug('%s <- %s (%s)', self.addr[1], q[1], m['heartbeat'])
         self.alive.add(q)

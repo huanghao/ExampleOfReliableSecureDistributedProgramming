@@ -3,14 +3,12 @@ import hashlib
 import logging
 
 from .basic import Store, trigger, start_timer, implements, uses, ABC
-from .links import BasicLink
-from .failure_detector import ExcludeOnTimeout, IncreasingTimeout
 
 log = logging.getLogger(__name__)
 
 
 @implements('LeaderElection')
-@uses('PerfectFailureDetector', ExcludeOnTimeout, 'p')
+@uses('PerfectFailureDetector', 'p')
 class MonarchicalLeaderElection(ABC):
     """
     Algo 2.6: Monarchical Leader Election
@@ -36,7 +34,7 @@ class MonarchicalLeaderElection(ABC):
 
 
 @implements('EventualLeaderDetector')
-@uses('EventuallyPerfectFailureDetector', IncreasingTimeout, 'p')
+@uses('EventuallyPerfectFailureDetector', 'p')
 class MonarchicalEventualLeaderElection(ABC):
     """
     Algo 2.8: monarchical eventual leader detection
@@ -62,12 +60,12 @@ class MonarchicalEventualLeaderElection(ABC):
 
 
 @implements('EventualLeaderDetector')
-@uses('FairLossPointToPointLinks', BasicLink, 'fll')
+@uses('FairLossPointToPointLinks', 'fll')
 class ElectLowerEpoch(ABC):
     """
     Algorithm 2.9: Elect Lower Epoch
     """
-    DELAY = 0.5
+    DELAY = 4
 
     def __init__(self, name, upper, udp, addr, peers):
         super().__init__(name, upper, udp, addr, peers, init=False)
