@@ -33,22 +33,29 @@ def uses(ifname, concrete, attr):
 
 
 class ABC:
-    def __init__(self, name, upper, udp, addr, peers):
+    def __init__(self, name, upper, udp, addr, peers, init=True):
         self.name, self.upper = name, upper
         self.addr, self.peers = addr, peers
         self.members = set(peers) | {addr}
         self.N = len(self.members)
+        if init:
+            trigger(self, 'Init')
         for ifname, concrete, attr in self._uses:
             that = concrete('%s.%s' % (name, attr), self, udp, addr, peers)
             setattr(self, attr, that)
-        trigger(self, 'Init')
 
 
 def trigger(obj, event, *attrs):
     m = getattr(obj, 'upon_' + event, None)
-    if m:
-        return m(*attrs)
-    log.warn('Unknown event %s to %s', event, obj.__class__.__name__)
+    if not m:
+        log.warn('Unknown event %s to %s', event, obj.__class__.__name__)
+        return
+    # put event to a queue instead of calling it right now
+    # need this hack, since some modules have cycle dependency
+    # in their Init event
+    import asyncio
+    loop = asyncio.get_event_loop()
+    loop.call_soon(m, *attrs)
 
 
 def start_timer(delay, callback, *args):

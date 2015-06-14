@@ -23,13 +23,11 @@ class BasicBroadcast(ABC):
         pass
 
     def upon_Broadcast(self, m):
-        for p in self.peers:
-            msg = {
+        for p in self.members:
+            trigger(self.pl, 'Send', p, {
                 'mid': uuid.uuid4(),
                 'data': m,
-            }
-            trigger(self.pl, 'Send', p, msg)
-        trigger(self, 'Deliver', self.addr, msg)
+                })
 
     def upon_Deliver(self, q, m):
         trigger(self.upper, 'Deliver', q, m['data'])

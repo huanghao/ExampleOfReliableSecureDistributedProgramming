@@ -4,7 +4,8 @@ import argparse
 import random
 
 from .basic import UDPProtocol, trigger
-from .consensus import FloodingConsensus
+from .consensus import LeaderBasedEpochChange
+from .failure_detector import IncreasingTimeout
 
 log = logging.getLogger(__name__)
 
@@ -45,9 +46,14 @@ class Admin:
 class Test(Proc):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
-        self.con = FloodingConsensus(
+        cls = IncreasingTimeout
+        cls = LeaderBasedEpochChange
+        self.con = cls(
             'con', self, self.protocol,
             self.addr, self.peers)
+
+    def upon_StartEpoch(self, ts, leader):
+        log.info('%s start epoch at ts %s', leader, ts)
 
     def upon_Decide(self, v):
         log.info('Decision: %s', v)
@@ -59,10 +65,10 @@ class Test(Proc):
         log.info('%s crashed', p)
 
     def upon_Suspect(self, p):
-        log.info('suspect %s', p)
+        log.info('%s suspect %s', self.addr[1], p[1])
 
     def upon_Restore(self, p):
-        log.info('restore %s', p)
+        log.info('%s restore %s', self.addr[1], p[1])
 
 
 def parse_args():

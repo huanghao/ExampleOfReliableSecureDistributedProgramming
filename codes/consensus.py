@@ -23,7 +23,7 @@ from .basic import implements, uses, trigger, ABC
 from .links import EliminateDuplicates
 from .broadcast import BasicBroadcast, LazyReliableBroadcast
 from .failure_detector import ExcludeOnTimeout
-from .leader_election import ElectLowerEpoch
+from .leader_election import MonarchicalEventualLeaderElection
 
 log = logging.getLogger(__name__)
 
@@ -324,7 +324,7 @@ class HierarchicalUniformConsensus(ABC):
 @implements('EpochChange')
 @uses('PerfectPointToPointLinks', EliminateDuplicates, 'pl')
 @uses('BestEffortBroadcast', BasicBroadcast, 'beb')
-@uses('EventualLeaderDetector', ElectLowerEpoch, 'o')
+@uses('EventualLeaderDetector', MonarchicalEventualLeaderElection, 'o')
 class LeaderBasedEpochChange(ABC):
     """
     Algorithm 5.5: Leader-based Epoch-change

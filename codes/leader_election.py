@@ -50,7 +50,7 @@ class MonarchicalEventualLeaderElection(ABC):
         leader = max(self.members - self.suspected)
         if leader != self.leader:
             self.leader = leader
-            self.upperlayer.trigger('Trust', leader=leader)
+            trigger(self.upper, 'Trust', leader)
 
     def upon_Suspect(self, peer):
         self.suspected.add(peer)
@@ -69,23 +69,24 @@ class ElectLowerEpoch(ABC):
     """
     DELAY = 0.5
 
-    def __init__(self, *args):
+    def __init__(self, name, upper, udp, addr, peers):
+        super().__init__(name, upper, udp, addr, peers, init=False)
         sid = hashlib.md5(str(self.addr).encode()).hexdigest()
         self.store = Store(sid)
         if self.store.exists():
-            self.trigger('Recovery')
+            trigger(self, 'Recovery')
         else:
-            self.trigger('Init')
+            trigger(self, 'Init')
 
     def upon_Init(self):
         self.epoch = 0
         self.store.store(self.epoch)
         self.candidates = {}
-        self.trigger('Recovery')
+        trigger(self, 'Recovery')
 
     def upon_Recovery(self):
         self.leader = max(self.members)
-        self.upperlayer.trigger('Trust', leader=self.leader)
+        trigger(self.upper, 'Trust', self.leader)
         self.delay = self.DELAY
         self.epoch = self.store.retrieve()
         self.epoch += 1
@@ -99,7 +100,7 @@ class ElectLowerEpoch(ABC):
             self.leader = leader
             self.delay += self.DELAY
             log.info('delay increased to %s', self.delay)
-            self.upperlayer.trigger('Trust', leader=leader)
+            trigger(self.upper, 'Trust', leader)
         self.pulse()
 
     def select(self, candidates):
@@ -123,9 +124,8 @@ class ElectLowerEpoch(ABC):
         self.candidates = {}
         start_timer(self.delay, self.upon_HeartbeatTimeout)
 
-    def upon_Deliver(self, msg, peer):
-        epoch = msg['epoch']
-        if (peer in self.candidates and
-                self.candidates[peer] < epoch):
-            self.candidates.pop(peer)
-        self.candidates[peer] = epoch
+    def upon_Deliver(self, q, m):
+        epoch = m['epoch']
+        if q in self.candidates and self.candidates[q] < epoch:
+            self.candidates.pop(q)
+        self.candidates[q] = epoch
