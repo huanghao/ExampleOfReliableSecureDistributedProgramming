@@ -105,16 +105,12 @@ class WaitingCausalBroadcast(ABC):
 
     def upon_Deliver(self, q, m):
         self.pending.append((m['clock'], m['data'], q))
-        while 1:
-            msg = []
+        goon = True
+        while goon:
+            goon = False
             for i in range(len(self.pending)-1, -1, -1):
                 w, data, q = self.pending[i]
                 if w <= tuple(self.v):
-                    msg.append(self.pending.pop(i))
                     self.v[self.rank(q)] += 1
-            if not msg:
-                break
-            # in async en, deliver may call send msg lead to
-            # breaking the previous for loop
-            for w, data, q in msg:
-                trigger(self.upper, 'Deliver', q, data)
+                    trigger(self.upper, 'Deliver', q, data)
+                    goon = True

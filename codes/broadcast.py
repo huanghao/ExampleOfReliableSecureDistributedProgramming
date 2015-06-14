@@ -145,7 +145,7 @@ class AllAckUniformReliableBroadcast(ABC):
         for origin, payload in self.pending:
             if payload not in self.delivered and self.can_deliver(payload):
                 self.delivered.add(payload)
-                self.upperlayer.trigger('Deliver', msg=payload)
+                trigger(self.upper, 'Deliver', payload)
 
 
 @implements('UniformReliableBroadcast')
@@ -185,4 +185,4 @@ class MajorityAckUniformReliableBroadcast(ABC):
             payload = msg['payload']
             if payload not in self.delivered and self.can_deliver(payload):
                 self.delivered.add(payload)
-                self.upperlayer.trigger('Deliver', msg=payload, peer=origin)
+                trigger(self.upper, 'Deliver', origin, payload)

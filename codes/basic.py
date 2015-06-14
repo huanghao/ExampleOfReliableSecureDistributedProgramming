@@ -31,13 +31,14 @@ def uses(ifname, attr):
 
 
 class ABC:
-    def __init__(self, name, upper, udp, addr, peers, init=True):
+    def __init__(self, name, upper, udp, addr, peers,
+                 init=True, initargs=()):
         self.name, self.upper = name, upper
         self.addr, self.peers = addr, peers
         self.members = set(peers) | {addr}
         self.N = len(self.members)
         if init:
-            trigger(self, 'Init')
+            trigger(self, 'Init', *initargs)
 
         from .ifconf import get_implementation
         for ifname, attr in self._uses:

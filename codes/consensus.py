@@ -407,6 +407,7 @@ class ReadWriteEpochChange(ABC):
                 })
         elif m['typ'] == 'state':  # only leader l
             self.states[q] = (m['ts'], m['val'])
+            self.check_to_write()
         elif m['typ'] == 'write':
             self.valts, self.val = m['ts'], m['val']
             trigger(self.pl, 'Send', q, {'typ': 'accept'})
@@ -439,9 +440,11 @@ class ReadWriteEpochChange(ABC):
 
 
 @implements('UniformConsensus')
-@uses('EpochChange', 'x')
+@uses('EpochChange', 'ec')
 @uses('EpochConsensus', 'y')  # multiple instances
 class LeaderDrivenConsensus(ABC):
     """
     Algorithm 5.7
     """
+    def upon_Init(self):
+        pass

@@ -16,5 +16,3 @@ FIXME
 
 - define "module"
 - DSL
-- implements+uses+conf to switch
-- re-enter message handler
