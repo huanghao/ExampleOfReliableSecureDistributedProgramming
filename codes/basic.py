@@ -20,8 +20,6 @@ def implements(ifname):
 
 def uses(ifname, attr):
     def decorator(cls):
-        if ifname not in IFS:
-            raise ValueError("Undefined interface name: %s" % ifname)
         if hasattr(cls, '_uses'):
             cls._uses.append((ifname, attr))
         else:

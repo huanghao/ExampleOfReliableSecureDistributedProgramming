@@ -15,4 +15,4 @@ FIXME
 -----
 
 - define "module"
-- DSL
+- DSL to generate msg graph: using a separated logger

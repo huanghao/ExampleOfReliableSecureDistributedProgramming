@@ -3,7 +3,7 @@ import socket
 
 addr = ('127.0.0.1', 4000)
 if len(sys.argv) > 1:
-    data = sys.argv[1]
+    data = ' '.join(sys.argv[1:])
 else:
     data = 'hello'
 

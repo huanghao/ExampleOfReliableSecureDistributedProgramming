@@ -6,6 +6,7 @@ import random
 from .basic import UDPProtocol, trigger
 from .consensus import LeaderBasedEpochChange
 from .failure_detector import IncreasingTimeout
+from .paxos import Synod
 
 log = logging.getLogger(__name__)
 
@@ -37,10 +38,11 @@ class Admin:
         log.warn('connection %s lost: %s', self, exc)
 
     def datagram_received(self, data, peer):
-        hid = int(data)
-        proc = self.procs[hid]
-        v = random.randint(1, 10)
-        trigger(proc.con, 'Propose', v)
+        # select serveral procs to propose random values
+        for pid in random.sample(range(7), int(data)):
+            proc = self.procs[pid]
+            v = chr(65+random.randint(0, 25))
+            trigger(proc.con, 'Propose', v)
 
 
 class Test(Proc):
@@ -48,6 +50,7 @@ class Test(Proc):
         super().__init__(*args, **kw)
         cls = IncreasingTimeout
         cls = LeaderBasedEpochChange
+        cls = Synod
         self.con = cls(
             'con', self, self.protocol,
             self.addr, self.peers)
@@ -56,7 +59,7 @@ class Test(Proc):
         log.info('%s start epoch at ts %s', leader, ts)
 
     def upon_Decide(self, v):
-        log.info('Decision: %s', v)
+        log.info('Decision: %s, %s', v, self.addr)
 
     def upon_Deliver(self, q, m):
         log.info('%d: Recv %s', self.addr[1], m)
