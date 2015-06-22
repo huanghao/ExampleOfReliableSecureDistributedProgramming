@@ -16,3 +16,4 @@ FIXME
 
 - define "module"
 - DSL to generate msg graph: using a separated logger
+- make interface classes, and use zope.interface: http://docs.zope.org/zope.interface/

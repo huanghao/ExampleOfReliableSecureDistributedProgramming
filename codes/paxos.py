@@ -1,3 +1,38 @@
+"""
+Pseudo code from course 6.824
+
+--- Paxos Proposer ---
+proposer(v):
+while not decided:
+    choose n, unique and higher than any n seen so far
+    send prepare(n) to all servers including self
+    if prepare_ok(n, na, va) from majority:
+        v' = va with highest na; choose own v otherwise
+        send accept(n, v') to all
+        if accept_ok(n) from majority:
+            send decided(v') to all
+
+--- Paxos Acceptor ---
+acceptor state on each node (persistent):
+    np     --- highest prepare seen
+    na, va --- highest accept seen
+
+acceptor's prepare(n) handler:
+    if n > np
+        np = n
+        reply prepare_ok(n, na, va)
+    else
+        reply prepare_reject
+
+acceptor's accept(n, v) handler:
+    if n >= np
+        np = n
+        na = n
+        va = v
+        reply accept_ok(n)
+   else
+        reply accept_reject
+"""
 import logging
 from collections import defaultdict
 
@@ -10,6 +45,10 @@ log = logging.getLogger(__name__)
 @uses('BestEffortBroadcast', 'beb')
 @uses('FairLossPointToPointLinks', 'fll')
 class Synod(ABC):
+    """
+    Only proposer knows which value has been chosen
+    If other servers want to know, must execute Paxos with their own proposal
+    """
     def upon_Init(self):
         # for proposer
         self.max_round = 0
@@ -46,7 +85,7 @@ class Synod(ABC):
             })
 
     def upon_Deliver(self, q, m):
-        n = m['n']
+        n = m.get('n')
         if m['typ'] == 'promise':  # proposer
             if n[0] > self.max_round:
                 self.max_round = n[0]
@@ -57,6 +96,7 @@ class Synod(ABC):
                 if v:
                     self.proposals[n] = v
                 else:
+                    # FIXME: KeyError raised here, I didn't find the bug
                     v = self.proposals[n]
                 trigger(self.beb, 'Broadcast', {
                     'typ': 'accept',
@@ -66,9 +106,11 @@ class Synod(ABC):
         elif m['typ'] == 'accepted':  # proposer
             p = self.accepted[n]
             p.add(q)
-            if len(p) > self.N / 2 and not self.chosen:
-                self.chosen = True
-                trigger(self.upper, 'Decide', self.proposals[n])
+            if len(p) > self.N / 2:
+                trigger(self.beb, 'Broadcast', {
+                    'typ': 'decided',
+                    'v': self.proposals[n],
+                    })
         elif m['typ'] == 'prepare':  # acceptor
             if self.min_proposal is None or n > self.min_proposal:
                 self.min_proposal = n
@@ -79,9 +121,34 @@ class Synod(ABC):
                 })
         elif m['typ'] == 'accept':  # acceptor
             if self.min_proposal is None or n >= self.min_proposal:
+                self.min_proposal = n
                 self.accepted_proposal = n
                 self.accepted_value = m['v']
                 trigger(self.fll, 'Send', q, {
                     'typ': 'accepted',
                     'n': n,
                     })
+        elif m['typ'] == 'decided' and not self.chosen:
+            self.chosen = True
+            trigger(self.upper, 'Decide', m['v'])
+
+
+
+@implements('ReplicatedStateMachine')
+@uses('BestEffortBroadcast', 'beb')
+@uses('FairLossPointToPointLinks', 'fll')
+@uses('LeaderElection', 'l')
+class MultiplePaxos(ABC):
+    """
+    http://www.youtube.com/watch?v=JEpsBg0AO6o
+
+    - which log entry to use for a given client request ?
+    - performance optimizations:
+      use leader to reduce proposer conflicts
+      eliminate most prepare requests
+    - ensuring full replication
+    - client protocol
+    - configuration changes
+    """
+    def upon_Init(self):
+        pass
