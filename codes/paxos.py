@@ -134,11 +134,18 @@ class Synod(ABC):
 
 
 
+class Proposer:
+    pass
+
+
+class Acceptor:
+    pass
+
+
 @implements('ReplicatedStateMachine')
 @uses('BestEffortBroadcast', 'beb')
-@uses('FairLossPointToPointLinks', 'fll')
-@uses('LeaderElection', 'l')
-class MultiplePaxos(ABC):
+@uses('PerfectPointToPointLinks', 'pl')
+class MultiPaxos(ABC):
     """
     http://www.youtube.com/watch?v=JEpsBg0AO6o
 
@@ -151,4 +158,11 @@ class MultiplePaxos(ABC):
     - configuration changes
     """
     def upon_Init(self):
-        pass
+        self.logs = []
+        self.proposals = {}
+
+    def upon_Execute(self, cmd):
+        pos = self.guess_pos()
+        proposer = Proposer(self, pos, cmd)
+        proposer.start()
+        

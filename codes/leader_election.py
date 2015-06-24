@@ -22,7 +22,7 @@ class MonarchicalLeaderElection(ABC):
         leader = max(self.members - self.suspected)
         if leader != self.leader:
             self.leader = leader
-            self.upperlayer.trigger('Leader', leader=leader)
+            trigger(self.upper, 'Leader', leader)
 
     def upon_Crash(self, peer):
         self.suspected.add(peer)
