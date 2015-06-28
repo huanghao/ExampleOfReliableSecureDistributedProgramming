@@ -1,14 +1,14 @@
 """
 """
 import logging
-from collections import defaultdict
 
 from .basic import implements, uses, trigger, ABC
 
 log = logging.getLogger(__name__)
 
 
-@uses('CausalOrderReliableBroadcast')
+@implements('ZKAtomicBroadcast')
+@uses('CausalOrderReliableBroadcast', 'crb')
 class Zab(ABC):
     """
     ZK makes the following requirements on the broadcast protocol:
@@ -21,4 +21,4 @@ class Zab(ABC):
     message proposed before m by L must also be delivered
     """
     def upon_Init(self):
-        pass
+        trigger(self.crb, 'Broadcast', 'xx')

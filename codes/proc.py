@@ -6,7 +6,7 @@ import random
 from .basic import UDPProtocol, trigger
 from .consensus import LeaderBasedEpochChange
 from .failure_detector import IncreasingTimeout
-from .paxos import Synod
+from .paxos import Synod, MultiPaxos
 
 log = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class Admin:
         for pid in random.sample(range(7), int(data)):
             proc = self.procs[pid]
             v = chr(65+random.randint(0, 25))
-            trigger(proc.con, 'Propose', v)
+            trigger(proc.con, 'Execute', v)
 
 
 class Test(Proc):
@@ -51,6 +51,7 @@ class Test(Proc):
         cls = IncreasingTimeout
         cls = LeaderBasedEpochChange
         cls = Synod
+        cls = MultiPaxos
         self.con = cls(
             'con', self, self.protocol,
             self.addr, self.peers)

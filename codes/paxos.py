@@ -33,6 +33,7 @@ acceptor's accept(n, v) handler:
    else
         reply accept_reject
 """
+import uuid
 import logging
 from collections import defaultdict
 
@@ -133,15 +134,6 @@ class Synod(ABC):
             trigger(self.upper, 'Decide', m['v'])
 
 
-
-class Proposer:
-    pass
-
-
-class Acceptor:
-    pass
-
-
 @implements('ReplicatedStateMachine')
 @uses('BestEffortBroadcast', 'beb')
 @uses('PerfectPointToPointLinks', 'pl')
@@ -158,11 +150,36 @@ class MultiPaxos(ABC):
     - configuration changes
     """
     def upon_Init(self):
-        self.logs = []
-        self.proposals = {}
+        self.pending = {}
+        self.logs = {}
+        self.last_pos = 0
+        self.next_cmd_pos = 0
 
     def upon_Execute(self, cmd):
-        pos = self.guess_pos()
-        proposer = Proposer(self, pos, cmd)
-        proposer.start()
-        
+        cid = uuid.uuid4().hex
+        self._propose(cid, cmd)
+
+    def _propose(self, cid, cmd):
+        pos = self.last_pos
+        self.last_pos += 1
+        # FIXME: bug here, there isn't corresponding link name inside each peer
+        c = Synod('consensus.%s' % pos, self, self._udp,
+                  self.addr, self.peers)
+        self.pending[pos] = (cid, cmd, c)
+        trigger(c, 'Propose', (pos, cid, cmd))
+
+    def upon_Decide(self, v):
+        pos, cid1, cmd1 = v
+        cid2, cmd2, consensus = self.pending[pos]
+        self.logs[pos] = (cid1, cmd1)
+        del consensus
+        if cid1 != cid2:
+            # propose another place for cmd2, since it failed to put it in pos
+            self._propose(cid2, cmd2)
+        self._run_cmds()
+
+    def _run_cmds(self):
+        while self.next_cmd_pos in self.logs:
+            cid, cmd = self.logs.pop(self.next_cmd_pos)
+            log.info('run command cid:%s, cmd:%s', cid, cmd)
+            self.next_cmd_pos += 1

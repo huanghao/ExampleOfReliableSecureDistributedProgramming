@@ -31,6 +31,7 @@ def uses(ifname, attr):
 class ABC:
     def __init__(self, name, upper, udp, addr, peers,
                  init=True, initargs=()):
+        self._udp = udp
         self.name, self.upper = name, upper
         self.addr, self.peers = addr, peers
         self.members = set(peers) | {addr}
@@ -81,6 +82,8 @@ class UDPProtocol:
         try:
             name, msg = pickle.loads(data)
             handler = self.handlers[name]
+        except KeyError:
+            log.warn('unknown link name: %s', name)
         except:
             log.warn('bad msg from %s: %s', peer, data)
         else:
